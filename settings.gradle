@@ -1,2 +1,4 @@
+include ':tbs-release'
+include ':tbs'
 include ':app'
 rootProject.name = "TbsPlugin"
