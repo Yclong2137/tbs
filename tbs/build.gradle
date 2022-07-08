@@ -4,7 +4,6 @@ plugins {
 
 android {
     compileSdkVersion 32
-    buildToolsVersion "32.0.0"
 
     defaultConfig {
         minSdkVersion 16
@@ -12,11 +11,19 @@ android {
         versionCode 1
         versionName "1.0"
         ndk {
-            abiFilters "armeabi-v7a"
+            abiFilters 'armeabi-v7a'
         }
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
     }
+
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+
 
     buildTypes {
         release {
@@ -32,10 +39,8 @@ android {
 
 dependencies {
 
-    implementation 'androidx.appcompat:appcompat:1.1.0'
-    implementation 'com.google.android.material:material:1.1.0'
-    implementation files('libs\\tbs_sdk_thirdapp_v4.3.0.253_44153_sharewithdownloadwithfile_withoutGame_obfs_20220117_105333.jar')
-    testImplementation 'junit:junit:4.+'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation files('libs/tbs_sdk_thirdapp_v4.3.0.253_44153_sharewithdownloadwithfile_withoutGame_obfs_20220117_105333.jar')
+    implementation 'androidx.annotation:annotation:1.4.0'
+
 }

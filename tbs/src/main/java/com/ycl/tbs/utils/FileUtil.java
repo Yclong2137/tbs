@@ -2,9 +2,20 @@ package com.ycl.tbs.utils;
 
 import android.content.Context;
 
+import com.ycl.tbs.ProgressListener;
+
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okio.BufferedSink;
+import okio.BufferedSource;
+import okio.Okio;
 
 /**
  * 文件操作工具类
@@ -12,6 +23,10 @@ import java.io.InputStream;
  * 将存储文件目录规范化，对应功能划分目录，后续操作缓存管理进行调用操作
  */
 public class FileUtil {
+
+
+    private static final OkHttpClient okHttpClient = new OkHttpClient();
+
 
     /**
      * 保存文件预览的目录
@@ -30,7 +45,7 @@ public class FileUtil {
      * @param oldPath 旧的文件路径
      * @param newPath 新的文件路径
      */
-    public static boolean copyFileFromAssets(Context context, String oldPath, String newPath) {
+    public static void copyFileFromAssets(Context context, String oldPath, String newPath) {
         try {
             String[] fileNames = context.getAssets().list(oldPath);// 获取assets目录下的所有文件及目录名
             if (fileNames.length > 0) {// 如果是目录
@@ -54,9 +69,7 @@ public class FileUtil {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
         }
-        return true;
     }
 
     /**
@@ -73,4 +86,52 @@ public class FileUtil {
         }
         return "";
     }
+
+    /**
+     * 下载文件
+     *
+     * @param url      下载路径
+     * @param filePath 文件路径
+     */
+    public static void downloadFile(String url, String filePath, ProgressListener progressListener) throws IOException {
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+        Response response = okHttpClient.newCall(request).execute();
+        if (response.isSuccessful()) {
+            assert response.body() != null;
+            saveFile(response.body(), filePath, progressListener);
+        } else {
+            throw new IOException(response.message());
+        }
+
+    }
+
+    /**
+     * 保存文件
+     *
+     * @param body             响应体
+     * @param filePath         文件路径
+     * @param progressListener 进度监听
+     * @throws IOException
+     */
+    private static void saveFile(ResponseBody body, String filePath, ProgressListener progressListener) throws IOException {
+
+        try (BufferedSink sink = Okio.buffer(Okio.sink(new File(filePath))); BufferedSource source = body.source()) {
+            byte[] buffer = new byte[8192];
+            int bytes;
+            long downloadLength = 0;
+            long total = body.contentLength();
+            while ((bytes = source.read(buffer)) != -1) {
+                sink.write(buffer, 0, bytes);
+                downloadLength += bytes;
+                if (progressListener != null) {
+                    progressListener.onProgress((int) (downloadLength * 1.0 / total * 100));
+                }
+            }
+            sink.flush();
+        }
+    }
 }
+
+
