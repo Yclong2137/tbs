@@ -1,14 +1,21 @@
 package com.ycl.tbs.utils;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 
+import com.ycl.tbs.FileDownloadListener;
 import com.ycl.tbs.ProgressListener;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -28,6 +35,8 @@ public class FileUtil {
     private static final OkHttpClient okHttpClient = new OkHttpClient();
 
 
+    private static final Handler sMainHandler = new Handler(Looper.getMainLooper());
+
     /**
      * 保存文件预览的目录
      *
@@ -37,6 +46,16 @@ public class FileUtil {
         String dirName = "TBSFile";
         return context.getExternalFilesDir(dirName);
     }
+
+    /**
+     * 保存文件预览的目录
+     *
+     * @param context 上下文对象
+     */
+    public static File getTmpFileDir(Context context) {
+        return context.getExternalFilesDir("tmpFile");
+    }
+
 
     /**
      * 把asset的文件转化为本地文件
@@ -72,6 +91,11 @@ public class FileUtil {
         }
     }
 
+
+    public static void execute(Runnable r) {
+        HiExecutor.getInstance().execute(r);
+    }
+
     /**
      * 获取url文件后缀
      *
@@ -93,19 +117,56 @@ public class FileUtil {
      * @param url      下载路径
      * @param filePath 文件路径
      */
-    public static void downloadFile(String url, String filePath, ProgressListener progressListener) throws IOException {
+    public static void downloadFile(String url, String filePath, FileDownloadListener listener) {
         Request request = new Request.Builder()
                 .url(url)
                 .build();
-        Response response = okHttpClient.newCall(request).execute();
-        if (response.isSuccessful()) {
-            assert response.body() != null;
-            saveFile(response.body(), filePath, progressListener);
-        } else {
-            throw new IOException(response.message());
-        }
+
+        okHttpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                sMainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (listener != null) {
+                            listener.onFail(e.getMessage(), e);
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    assert response.body() != null;
+                    File file = saveFile(response.body(), filePath, listener);
+                    sMainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (listener != null) {
+                                listener.onSuccess(file);
+                            }
+
+                        }
+                    });
+
+                } else {
+                    sMainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (listener != null) {
+                                listener.onFail(response.message(), null);
+                            }
+                        }
+                    });
+
+                }
+            }
+        });
+
 
     }
+
 
     /**
      * 保存文件
@@ -115,9 +176,9 @@ public class FileUtil {
      * @param progressListener 进度监听
      * @throws IOException
      */
-    private static void saveFile(ResponseBody body, String filePath, ProgressListener progressListener) throws IOException {
-
-        try (BufferedSink sink = Okio.buffer(Okio.sink(new File(filePath))); BufferedSource source = body.source()) {
+    private static File saveFile(ResponseBody body, String filePath, ProgressListener progressListener) throws IOException {
+        File file;
+        try (BufferedSink sink = Okio.buffer(Okio.sink(file = new File(filePath))); BufferedSource source = body.source()) {
             byte[] buffer = new byte[8192];
             int bytes;
             long downloadLength = 0;
@@ -125,12 +186,20 @@ public class FileUtil {
             while ((bytes = source.read(buffer)) != -1) {
                 sink.write(buffer, 0, bytes);
                 downloadLength += bytes;
-                if (progressListener != null) {
-                    progressListener.onProgress((int) (downloadLength * 1.0 / total * 100));
-                }
+                long finalDownloadLength = downloadLength;
+                sMainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (progressListener != null) {
+                            progressListener.onProgress((int) (finalDownloadLength * 1.0 / total * 100));
+                        }
+                    }
+                });
+
             }
             sink.flush();
         }
+        return file;
     }
 }
 

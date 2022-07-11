@@ -8,9 +8,10 @@ import android.net.Uri;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.tencent.smtt.sdk.TbsReaderPredownload;
 import com.ycl.tbs.utils.HiExecutor;
 import com.ycl.tbs.utils.Logger;
-import com.ycl.tbs.utils.Util;
+import com.ycl.tbs.utils.TbsSdk;
 
 public class TbsContentProvider extends ContentProvider {
 
@@ -23,7 +24,23 @@ public class TbsContentProvider extends ContentProvider {
         HiExecutor.getInstance().execute(new Runnable() {
             @Override
             public void run() {
-                Util.initTbs(getContext());
+                TbsSdk.initTbs(getContext(), new TbsSdk.TbsCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Logger.e("tbs core install success");
+                        new TbsReaderPredownload(new TbsReaderPredownload.ReaderPreDownloadCallback() {
+                            @Override
+                            public void onEvent(String s, int i, boolean b) {
+
+                            }
+                        }).init(getContext());
+                    }
+
+                    @Override
+                    public void onFail(Exception e) {
+                        Logger.e("tbs core install fail", e);
+                    }
+                });
             }
         });
         return false;

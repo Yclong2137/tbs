@@ -75,7 +75,6 @@ public class HiExecutor {
             @Override
             protected void afterExecute(Runnable r, Throwable t) {
                 //监控线程池耗时任务,线程创建数量,正在运行的数量
-                Logger.e("已执行完的任务的优先级是：" + ((PriorityRunnable) r).priority);
             }
         };
     }
@@ -123,8 +122,6 @@ public class HiExecutor {
         lock.lock();
         try {
             isPaused = true;
-
-            Logger.e("hiExecutor is paused");
         } finally {
             lock.unlock();
         }
@@ -141,7 +138,6 @@ public class HiExecutor {
         } finally {
             lock.unlock();
         }
-        Logger.e("hiExecutor is resumed");
     }
 
 }
