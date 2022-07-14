@@ -22,7 +22,8 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="true">
 
-        <activity android:name=".FileDisplayActivity" />
+        <activity android:name=".FileDisplayActivity"
+            android:theme="@android:style/Theme.Light.NoTitleBar"/>
 
         <service
             android:name="com.tencent.smtt.export.external.DexClassLoaderProviderService"

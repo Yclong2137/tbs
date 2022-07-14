@@ -21,7 +21,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 String path;
                 FileUtil.copyFileFromAssets(getApplicationContext(), "HowToLoadX5Core.doc", path=FileUtil.getTBSFileDir(getApplicationContext()).getPath() + "/HowToLoadX5Core.doc");
-                FileDisplayActivity.start(MainActivity.this,path);
+                FileDisplayActivity.start(MainActivity.this,path,"测试文档");
                 //startActivity(new Intent(MainActivity.this, FileDisplayActivity.class));
             }
         });

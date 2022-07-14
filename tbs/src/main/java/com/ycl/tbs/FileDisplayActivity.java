@@ -3,8 +3,13 @@ package com.ycl.tbs;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Toolbar;
 
 import com.tencent.smtt.sdk.TbsReaderView;
 import com.ycl.tbs.utils.FileUtil;
@@ -21,17 +26,36 @@ public class FileDisplayActivity extends Activity {
     private TbsReaderView mTbsReaderView;
 
     private static final String KEY_PATH = "key_path";
+    private static final String KEY_TITLE = "key_title";
 
 
-    public static void start(Context context, String filePath) {
+    public static void start(Context context, String filePath, String title) {
         Intent starter = new Intent(context, FileDisplayActivity.class);
         starter.putExtra(KEY_PATH, filePath);
+        starter.putExtra(KEY_TITLE, title);
         context.startActivity(starter);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_display_file);
+        Toolbar toolbar = findViewById(R.id.toolbar);
+
+        String title = getIntent().getStringExtra(KEY_TITLE);
+        if (title != null) {
+            TextView titleView = findViewById(R.id.tv_title);
+            titleView.setText(title);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    finish();
+                }
+            });
+        }
+        FrameLayout container = findViewById(R.id.fragment_container);
         if (mTbsReaderView == null) {
             mTbsReaderView = new TbsReaderView(this, new TbsReaderView.ReaderCallback() {
                 @Override
@@ -40,7 +64,7 @@ public class FileDisplayActivity extends Activity {
                 }
             });
         }
-        setContentView(mTbsReaderView);
+        container.addView(mTbsReaderView);
         openFile();
     }
 
