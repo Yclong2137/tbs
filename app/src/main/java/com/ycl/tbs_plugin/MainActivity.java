@@ -20,8 +20,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 String path;
-                FileUtil.copyFileFromAssets(getApplicationContext(), "HowToLoadX5Core.doc", path=FileUtil.getTBSFileDir(getApplicationContext()).getPath() + "/HowToLoadX5Core.doc");
-                FileDisplayActivity.start(MainActivity.this,path,"测试文档");
+                //FileUtil.copyFileFromAssets(getApplicationContext(), "HowToLoadX5Core.doc", path = FileUtil.getTBSFileDir(getApplicationContext()).getPath() + "/HowToLoadX5Core.doc");
+                FileDisplayActivity.start(MainActivity.this, "https://download.ttxc.net/word.doc");
                 //startActivity(new Intent(MainActivity.this, FileDisplayActivity.class));
             }
         });

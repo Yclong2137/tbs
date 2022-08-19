@@ -20,7 +20,7 @@ public class TbsCoreFromServerImpl implements TbsCoreFetcher {
     @Override
     public void fetch(FileDownloadListener listener) throws IOException {
         String filePath = FileUtil.getTBSFileDir(context) + "/045912_x5.tbs.apk";
-        FileUtil.downloadFile("http://api.developer.ttxc.net:6081/sysFile/045912_x5.tbs.apk", filePath, listener);
+        //FileUtil.downloadFile("http://api.developer.ttxc.net:6081/sysFile/045912_x5.tbs.apk", filePath, listener);
 
     }
 

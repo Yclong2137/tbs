@@ -1,7 +1,6 @@
 package com.ycl.tbs.fetcher;
 
 import com.ycl.tbs.FileDownloadListener;
-import com.ycl.tbs.ProgressListener;
 
 import java.io.IOException;
 

@@ -25,23 +25,7 @@ public class TbsSdk {
 
     private static final Object lock = new Object();
 
-    /**
-     * 内核拉取器
-     */
-    private static TbsCoreFetcher sTbsCoreFetcher;
 
-
-    public static void setTbsCoreFetcher(TbsCoreFetcher tbsCoreFetcher) {
-        sTbsCoreFetcher = tbsCoreFetcher;
-    }
-
-
-    public static TbsCoreFetcher getTbsCoreFetcher(Context context) {
-        if (sTbsCoreFetcher == null) {
-            return sTbsCoreFetcher = new TbsCoreFromMemoryImpl(context);
-        }
-        return sTbsCoreFetcher;
-    }
 
     private TbsSdk() {
     }
@@ -105,6 +89,10 @@ public class TbsSdk {
                 if (callback != null) callback.onFail(e);
             }
         }
+    }
+
+    private static TbsCoreFetcher getTbsCoreFetcher(Context context) {
+        return new TbsCoreFromMemoryImpl(context);
     }
 
     /**

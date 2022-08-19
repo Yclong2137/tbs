@@ -35,8 +35,6 @@ public class FileUtil {
     private static final OkHttpClient okHttpClient = new OkHttpClient();
 
 
-    private static final Handler sMainHandler = new Handler(Looper.getMainLooper());
-
     /**
      * 保存文件预览的目录
      *
@@ -96,69 +94,46 @@ public class FileUtil {
         HiExecutor.getInstance().execute(r);
     }
 
+
+
     /**
-     * 获取url文件后缀
-     *
-     * @param url 文件链接
+     * 取消所有请求
      */
-    public static String getSuffix(String url) {
-        if ((url != null) && (url.length() > 0)) {
-            int dot = url.lastIndexOf('.');
-            if ((dot > -1) && (dot < (url.length() - 1))) {
-                return url.substring(dot + 1);
-            }
-        }
-        return "";
+    public static void cancelAll() {
+        okHttpClient.dispatcher().cancelAll();
     }
 
     /**
      * 下载文件
      *
-     * @param url      下载路径
-     * @param filePath 文件路径
+     * @param url  下载路径
+     * @param dest 文件
      */
-    public static void downloadFile(String url, String filePath, FileDownloadListener listener) {
+    public static void downloadFile(String url, final File dest, FileDownloadListener listener) {
         Request request = new Request.Builder()
                 .url(url)
                 .build();
-
         okHttpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                sMainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (listener != null) {
-                            listener.onFail(e.getMessage(), e);
-                        }
-                    }
-                });
+                if (listener != null) {
+                    listener.onFail(e.getMessage(), e);
+                }
             }
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 if (response.isSuccessful()) {
                     assert response.body() != null;
-                    File file = saveFile(response.body(), filePath, listener);
-                    sMainHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (listener != null) {
-                                listener.onSuccess(file);
-                            }
-
-                        }
-                    });
+                    File file = saveFile(response.body(), dest, listener);
+                    if (listener != null) {
+                        listener.onSuccess(file);
+                    }
 
                 } else {
-                    sMainHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (listener != null) {
-                                listener.onFail(response.message(), null);
-                            }
-                        }
-                    });
+                    if (listener != null) {
+                        listener.onFail(response.message(), null);
+                    }
 
                 }
             }
@@ -172,13 +147,12 @@ public class FileUtil {
      * 保存文件
      *
      * @param body             响应体
-     * @param filePath         文件路径
+     * @param dest             目的文件
      * @param progressListener 进度监听
      * @throws IOException
      */
-    private static File saveFile(ResponseBody body, String filePath, ProgressListener progressListener) throws IOException {
-        File file;
-        try (BufferedSink sink = Okio.buffer(Okio.sink(file = new File(filePath))); BufferedSource source = body.source()) {
+    private static File saveFile(ResponseBody body, File dest, ProgressListener progressListener) throws IOException {
+        try (BufferedSink sink = Okio.buffer(Okio.sink(dest)); BufferedSource source = body.source()) {
             byte[] buffer = new byte[8192];
             int bytes;
             long downloadLength = 0;
@@ -187,20 +161,18 @@ public class FileUtil {
                 sink.write(buffer, 0, bytes);
                 downloadLength += bytes;
                 long finalDownloadLength = downloadLength;
-                sMainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (progressListener != null) {
-                            progressListener.onProgress((int) (finalDownloadLength * 1.0 / total * 100));
-                        }
-                    }
-                });
+                if (progressListener != null) {
+                    progressListener.onProgress((int) (finalDownloadLength * 1.0 / total * 100));
+                }
 
             }
             sink.flush();
         }
-        return file;
+        return dest;
     }
+
+
+
 }
 
 
