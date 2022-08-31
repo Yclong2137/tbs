@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:showDividers="middle"
     android:divider="?android:listDivider"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:showDividers="middle">
 
     <Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/white"
-        android:navigationIcon="@drawable/ic_back">
+        android:navigationIcon="@drawable/ic_baseline_arrow_back_ios_24">
+
 
         <TextView
             android:id="@+id/tv_title"
@@ -49,8 +50,8 @@
             <com.ycl.tbs.widgets.RoundProgressBarWidthNumber
                 android:id="@+id/progress_bar"
                 android:layout_width="wrap_content"
-                app:radius="12dp"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                app:radius="12dp" />
 
             <Space
                 android:layout_width="6dp"
@@ -60,8 +61,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:textColor="#FF019AFD"
-                android:text="加载中..." />
+                android:text="加载中..."
+                android:textColor="#FF019AFD" />
 
         </LinearLayout>
 

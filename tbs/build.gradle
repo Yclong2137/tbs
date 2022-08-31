@@ -1,6 +1,45 @@
 plugins {
     id 'com.android.library'
+    id 'maven-publish'
 }
+
+task sourceJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    archiveClassifier = "sources"
+}
+
+task generateSourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    archiveClassifier = "sources"
+}
+
+
+afterEvaluate {
+    publishing {
+
+        repositories {
+            mavenLocal()
+        }
+
+        publications {
+            maven(MavenPublication) {
+
+                afterEvaluate { artifact(tasks.getByName("bundleReleaseAar")) }
+                groupId 'com.ycl.tbs'
+                artifactId 'tbs'
+                version '1.0.0'
+
+                artifact sourceJar
+
+
+
+            }
+
+        }
+
+    }
+}
+
 
 android {
     compileSdkVersion 29
@@ -38,7 +77,6 @@ android {
 }
 
 dependencies {
-
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation files('libs/tbs_sdk_thirdapp_v4.3.0.253_44153_sharewithdownloadwithfile_withoutGame_obfs_20220117_105333.jar')
     implementation 'androidx.annotation:annotation:1.4.0'
