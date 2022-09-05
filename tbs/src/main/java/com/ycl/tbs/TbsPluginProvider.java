@@ -13,9 +13,9 @@ import com.ycl.tbs.utils.HiExecutor;
 import com.ycl.tbs.utils.Logger;
 import com.ycl.tbs.utils.TbsSdk;
 
-public class TbsContentProvider extends ContentProvider {
+public class TbsPluginProvider extends ContentProvider {
 
-    private static final String TAG = "TbsContentProvider";
+    private static final String TAG = "TbsPluginProvider";
 
 
     @Override

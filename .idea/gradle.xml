@@ -14,6 +14,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/tbs" />
+            <option value="$PROJECT_DIR$/vpn-helper" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

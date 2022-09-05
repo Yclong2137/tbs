@@ -10,86 +10,104 @@ import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.Toolbar;
 
-import com.tencent.smtt.sdk.TbsReaderView;
 import com.ycl.tbs.utils.FileUtil;
 import com.ycl.tbs.utils.Logger;
 import com.ycl.tbs.widgets.RoundProgressBarWidthNumber;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
+import com.ycl.tbs.widgets.file.FileView;
+import com.ycl.tbs.widgets.file.OfficeFileView;
+import com.ycl.tbs.widgets.file.PhotoFileView;
 
 import java.io.File;
-import java.io.IOException;
 
 /**
  * 文件预览
  */
 public class FileDisplayActivity extends Activity {
 
-
-    private TbsReaderView mTbsReaderView;
-
     private static final String KEY_URL = "key_url";
-    private RoundProgressBarWidthNumber mProgressBar;
-    private TextView mTitleView;
-
+    public static final String KEY_HOOK = "key_hook";
+    private static final String STR_LOADING = "加载中...";
+    private static final String STR_FAIL = "加载失败";
+    private static final String STR_NOT_SUPPORT = "暂不支持该类型%s文件";
+    private static final String STR_SUCCESS = "加载成功";
     private static final Handler sMainHandler = new Handler(Looper.getMainLooper());
 
 
-    public static void start(Context context, String filePath) {
+    private FileView mFileView;
+
+    private RoundProgressBarWidthNumber mProgressBar;
+    private TextView mMsgView;
+    private TextView mTitleView;
+    private Hook hook;
+
+    public static void startPreview(Context context, String filePath, Class<? extends Hook> hookClazz) {
         Intent starter = new Intent(context, FileDisplayActivity.class);
         starter.putExtra(KEY_URL, filePath);
+        starter.putExtra(KEY_HOOK, hookClazz);
         context.startActivity(starter);
     }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_display_file);
+        String url = getIntent().getStringExtra(KEY_URL);
+        try {
+            Class<? extends Hook> hookClazz = (Class<Hook>) getIntent().getSerializableExtra(KEY_HOOK);
+            hook = hookClazz.newInstance();
+        } catch (Exception e) {
+            Logger.e("HookClass is error", e);
+        }
         initView();
+
         mProgressBar.setVisibility(View.VISIBLE);
-        openFile(new FileCallback() {
+        mMsgView.setText(STR_LOADING);
+        ViewGroup mContainer = findViewById(R.id.fragment_container);
+        String fileName = FileUtil.getFileName(url);
+        String ext = FileUtil.getExtension(fileName);
+        if (OfficeFileView.isSupport(ext)) {
+            mFileView = new OfficeFileView(mContainer, hook);
+        } else if (PhotoFileView.isSupport(ext)) {
+            mFileView = new PhotoFileView(mContainer, hook);
+        } else {
+            Toast.makeText(this, "暂不支持该类型:" + ext + "的文件", Toast.LENGTH_SHORT).show();
+            mMsgView.setText(String.format(STR_NOT_SUPPORT, ext));
+            return;
+        }
+        mFileView.setFileCallback(new FileView.FileCallback() {
             @Override
-            public void onSuccess(File file) {
-                Logger.i("onSuccess() called with: file = [" + file + "]");
-                post(new Runnable() {
-                    @Override
-                    public void run() {
-                        mProgressBar.setVisibility(View.GONE);
-                        openFileInternal(file);
-                    }
-                });
-
-            }
-
-            @Override
-            public void onFail(String msg, Exception e) {
-                Logger.e("onFail() called with: msg = [" + msg + "], e = [" + e + "]");
-                post(new Runnable() {
-                    @Override
-                    public void run() {
-                        mProgressBar.setVisibility(View.GONE);
-                    }
-                });
+            public void onFileNameChanged(String fileName) {
+                if (mTitleView != null) {
+                    mTitleView.setText(fileName);
+                }
             }
 
             @Override
             public void onProgress(int progress) {
-                Logger.i("onProgress() called with: progress = [" + progress + "]");
-                updateProgressBar(progress);
+                if (mProgressBar != null) {
+                    mProgressBar.setProgress(progress);
+                }
             }
-        });
-    }
 
-    private void updateProgressBar(int progress) {
-        post(new Runnable() {
             @Override
-            public void run() {
-                mProgressBar.setProgress(progress);
+            public void onFail(String msg, Exception e) {
+                mProgressBar.setVisibility(View.GONE);
+                mMsgView.setText(STR_FAIL + "：" + e.getMessage());
+            }
+
+            @Override
+            public void onSuccess(File dstFile) {
+                mProgressBar.setVisibility(View.GONE);
+                mMsgView.setText(STR_SUCCESS);
             }
         });
+        mFileView.loadInto(url);
+
+
     }
 
 
@@ -104,129 +122,18 @@ public class FileDisplayActivity extends Activity {
                 }
             });
         }
-        ViewGroup mContainer = findViewById(R.id.fragment_container);
         mProgressBar = findViewById(R.id.progress_bar);
-        if (mTbsReaderView == null) {
-            mTbsReaderView = new TbsReaderView(this, new TbsReaderView.ReaderCallback() {
-                @Override
-                public void onCallBackAction(Integer integer, Object o, Object o1) {
-                    Logger.i("onCallBackAction() called with: integer = [" + integer + "], o = [" + o + "], o1 = [" + o1 + "]");
-                }
-            });
-        }
-        mContainer.addView(mTbsReaderView);
-    }
+        mMsgView = findViewById(R.id.tv_msg);
 
-
-    /**
-     * 现在文件
-     *
-     * @param url 下载路径
-     */
-    private void downloadFile(String url, File dest, FileDownloadListener l) {
-        try {
-            File parentFile = dest.getParentFile();
-            if (parentFile != null) {
-                parentFile.mkdirs();
-            }
-            dest.createNewFile();
-            FileUtil.downloadFile(url, dest, l);
-        } catch (IOException e) {
-            e.printStackTrace();
-            l.onFail(e.getMessage(), e);
-        }
-
-    }
-
-    /**
-     * 打开文件
-     */
-    private void openFile(FileCallback callback) {
-        String path = getIntent().getStringExtra(KEY_URL);
-        Logger.e("preOpenFile path：" + path);
-        if (mTitleView != null) {
-            mTitleView.setText(FilenameUtils.getName(path));
-        }
-        if (path == null) {
-            callback.onFail("文件路径不存在", null);
-            return;
-        }
-        File destFile = getDestFile(path);
-        if (destFile != null && destFile.exists()) {
-            FileUtils.deleteQuietly(destFile);
-        }
-        downloadFile(path, getDestFile(path), callback);
-
-    }
-
-    /**
-     * 获取目标文件
-     *
-     * @param path
-     * @return
-     */
-    private File getDestFile(String path) {
-        String fileName = FilenameUtils.getName(path);
-        File dir = this.getExternalFilesDir("downloads");
-        return FileUtils.getFile(dir, fileName);
-    }
-
-
-    /**
-     * 打开文件
-     */
-    private void openFileInternal(File file) {
-        //增加下面一句解决没有TbsReaderTemp文件夹存在导致加载文件失败
-        String bsReaderTemp = FileUtil.getTBSFileDir(FileDisplayActivity.this) + "/TbsReaderTemp";
-        File bsReaderTempFile = new File(bsReaderTemp);
-        if (!bsReaderTempFile.exists()) {
-            Logger.e("ready create file：/storage/emulated/0/TbsReaderTemp！！");
-            boolean mkdir = bsReaderTempFile.mkdir();
-            if (!mkdir) {
-                Logger.e("create file：/storage/emulated/0/TbsReaderTemp fail！！！！！");
-            }
-        }
-        String path = file.getPath();
-        String suffix = FilenameUtils.getExtension(path);
-        boolean bool = mTbsReaderView.preOpen(suffix, false);
-        Logger.e("preOpen：" + bool);
-        if (bool) {
-            Bundle bundle = new Bundle();
-            bundle.putString("filePath", path);
-            bundle.putString("tempPath", FileUtil.getTBSFileDir(FileDisplayActivity.this) + "/" + "TbsReaderTemp");
-            mTbsReaderView.openFile(bundle);
-        }
     }
 
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mTbsReaderView != null) {
-            mTbsReaderView.onStop();
-        }
-        sMainHandler.removeCallbacksAndMessages(null);
-        FileUtil.cancelAll();
+        mFileView.onDestroy();
     }
 
-
-    interface FileCallback extends FileDownloadListener {
-
-    }
-
-
-    void post(Runnable r) {
-        if (isMainThread()) {
-            r.run();
-        } else {
-            sMainHandler.post(r);
-        }
-    }
-
-
-    boolean isMainThread() {
-        return Looper.myLooper() == Looper.getMainLooper();
-    }
 
 }
 

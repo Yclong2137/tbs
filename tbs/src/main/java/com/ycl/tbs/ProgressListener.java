@@ -1,6 +1,8 @@
 package com.ycl.tbs;
 
-public interface ProgressListener {
+import java.io.Serializable;
+
+public interface ProgressListener extends Serializable {
 
     void onProgress(int progress);
 

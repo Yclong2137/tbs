@@ -7,6 +7,7 @@ import java.io.File;
  */
 public interface FileDownloadListener extends ProgressListener {
 
+
     void onSuccess(File file);
 
     void onFail(String msg, Exception e);

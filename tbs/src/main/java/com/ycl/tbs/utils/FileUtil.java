@@ -1,21 +1,18 @@
 package com.ycl.tbs.utils;
 
 import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
 
 import com.ycl.tbs.FileDownloadListener;
+import com.ycl.tbs.Hook;
 import com.ycl.tbs.ProgressListener;
-
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
-import okhttp3.Call;
-import okhttp3.Callback;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -95,7 +92,6 @@ public class FileUtil {
     }
 
 
-
     /**
      * 取消所有请求
      */
@@ -110,36 +106,86 @@ public class FileUtil {
      * @param dest 文件
      */
     public static void downloadFile(String url, final File dest, FileDownloadListener listener) {
-        Request request = new Request.Builder()
-                .url(url)
-                .build();
-        okHttpClient.newCall(request).enqueue(new Callback() {
+        HiExecutor.getInstance().execute(new Runnable() {
             @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                if (listener != null) {
-                    listener.onFail(e.getMessage(), e);
-                }
-            }
+            public void run() {
+                try {
+                    Request request = new Request.Builder()
+                            .url(url)
+                            .build();
+                    Response response = okHttpClient.newCall(request).execute();
 
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                if (response.isSuccessful()) {
-                    assert response.body() != null;
-                    File file = saveFile(response.body(), dest, listener);
-                    if (listener != null) {
-                        listener.onSuccess(file);
+                    if (response.isSuccessful()) {
+                        assert response.body() != null;
+                        File file = saveFile(response.body(), dest, listener);
+                        if (listener != null) {
+                            listener.onSuccess(file);
+                        }
+                    } else {
+                        if (listener != null) {
+                            listener.onFail(response.message(), null);
+                        }
                     }
 
-                } else {
-                    if (listener != null) {
-                        listener.onFail(response.message(), null);
-                    }
-
+                } catch (Exception e) {
+                    listener.onFail("文件下载出现错误", e);
                 }
             }
         });
 
 
+    }
+
+    /**
+     * 获取文件名
+     *
+     * @param url
+     * @return
+     */
+    public static String getFileName(String url) {
+        HttpUrl httpUrl = HttpUrl.parse(url);
+        if (httpUrl == null) return null;
+        List<String> pathSegments = httpUrl.pathSegments();
+        if (pathSegments == null || pathSegments.isEmpty()) {
+            return null;
+        }
+        return pathSegments.get(pathSegments.size() - 1);
+    }
+
+    /**
+     * 获取文件扩展名
+     *
+     * @param fileName
+     * @return
+     */
+    public static final String getExtension(String fileName) {
+        if (fileName == null) {
+            return null;
+        } else {
+            int index = indexOfExtension(fileName);
+            return index == -1 ? "" : fileName.substring(index + 1);
+        }
+    }
+
+    public static int indexOfExtension(String filename) {
+        if (filename == null) {
+            return -1;
+        } else {
+            int extensionPos = filename.lastIndexOf(46);
+            int lastSeparator = indexOfLastSeparator(filename);
+            return lastSeparator > extensionPos ? -1 : extensionPos;
+        }
+    }
+
+
+    public static int indexOfLastSeparator(String filename) {
+        if (filename == null) {
+            return -1;
+        } else {
+            int lastUnixPos = filename.lastIndexOf(47);
+            int lastWindowsPos = filename.lastIndexOf(92);
+            return Math.max(lastUnixPos, lastWindowsPos);
+        }
     }
 
 
@@ -170,7 +216,6 @@ public class FileUtil {
         }
         return dest;
     }
-
 
 
 }

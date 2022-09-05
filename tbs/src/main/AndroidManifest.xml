@@ -22,8 +22,12 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="true">
 
-        <activity android:name=".FileDisplayActivity"
-            android:theme="@android:style/Theme.Light.NoTitleBar"/>
+        <activity
+            android:name=".FileDisplayActivity"
+            android:theme="@android:style/Theme.Light.NoTitleBar" />
+        <activity
+            android:name=".PhotoViewActivity"
+            android:theme="@android:style/Theme.Light.NoTitleBar" />
 
         <service
             android:name="com.tencent.smtt.export.external.DexClassLoaderProviderService"
@@ -31,10 +35,9 @@
             android:process=":dexopt" />
 
         <provider
-            android:name=".TbsContentProvider"
+            android:name=".TbsPluginProvider"
             android:authorities="${applicationId}.tbs-preview"
-            android:exported="false"
-            />
+            android:exported="false" />
 
     </application>
 </manifest>

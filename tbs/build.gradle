@@ -27,7 +27,7 @@ afterEvaluate {
                 afterEvaluate { artifact(tasks.getByName("bundleReleaseAar")) }
                 groupId 'com.ycl.tbs'
                 artifactId 'tbs'
-                version '1.0.0'
+                version '1.0.2'
 
                 artifact sourceJar
 
@@ -80,5 +80,4 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation files('libs/tbs_sdk_thirdapp_v4.3.0.253_44153_sharewithdownloadwithfile_withoutGame_obfs_20220117_105333.jar')
     implementation 'androidx.annotation:annotation:1.4.0'
-    implementation files('libs/commons-io-2.4.jar')
 }
